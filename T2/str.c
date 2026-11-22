@@ -235,3 +235,118 @@ void s_remove(Str s, int pos, int tam)
 {
     s_substitui(s, pos, tam, NULL);
 }
+
+// Compara um caractere inteiro de cada vez, inclusive quando a codificação usa vários bytes.
+static bool pertence(Str_c conjunto, const byte *letra, int largura)
+{
+    for (int i = 0; i < conjunto->bytes; ) {
+        int n = u8_nbytes_no_unichar_que_comeca_com(conjunto->dados[i]);
+        if (n == largura && !memcmp(conjunto->dados + i, letra, n)) return true;
+        i += n;
+    }
+    return false;
+}
+
+// O índice conta caracteres para o retorno. A variável i percorre os bytes do vetor.
+static int busca(Str_c s, int pos, Str_c conjunto, bool dentro, bool reversa)
+{
+    int indice = limita(s, posicao(s, pos));
+    int i = indice_byte(s, indice);
+    if (reversa) {
+        while (i > 0) {
+            int fim = i--;
+            // Voltando no vetor, pula os bytes de continuação até o primeiro byte do caractere.
+            while ((s->dados[i] & 0xc0) == 0x80) i--;
+            indice--;
+            if (pertence(conjunto, s->dados + i, fim - i) == dentro) return indice;
+        }
+    } else {
+        while (i < s->bytes) {
+            int n = u8_nbytes_no_unichar_que_comeca_com(s->dados[i]);
+            if (pertence(conjunto, s->dados + i, n) == dentro) return indice;
+            i += n;
+            indice++;
+        }
+    }
+    return -1;
+}
+
+int s_busca_c(Str_c s, int pos, Str_c sb)
+{
+    return busca(s, pos, sb, true, false);
+}
+
+int s_busca_nc(Str_c s, int pos, Str_c sb)
+{
+    return busca(s, pos, sb, false, false);
+}
+
+int s_busca_rc(Str_c s, int pos, Str_c sb)
+{
+    return busca(s, pos, sb, true, true);
+}
+
+int s_busca_rnc(Str_c s, int pos, Str_c sb)
+{
+    return busca(s, pos, sb, false, true);
+}
+
+// Testa a substring somente nas posições em que começa um caractere.
+int s_busca_s(Str_c s, int pos, Str_c buscada)
+{
+    int indice = limita(s, posicao(s, pos));
+    if (buscada->bytes == 0) return indice;
+    int i = indice_byte(s, indice);
+    while (buscada->bytes <= s->bytes - i) {
+        if (!memcmp(s->dados + i, buscada->dados, buscada->bytes)) return indice;
+        i += u8_nbytes_no_unichar_que_comeca_com(s->dados[i]);
+        indice++;
+    }
+    return -1;
+}
+
+// Localiza as duas pontas antes de recortar, pois a remoção muda os índices.
+void s_apara(Str s, Str_c sobras)
+{
+    int inicio = s_busca_nc(s, 0, sobras);
+    int fim = s_busca_rnc(s, -1, sobras);
+    if (inicio < 0) s_remove(s, 0, -1);
+    else s_substring(s, s, inicio, fim - inicio + 1);
+}
+
+// Lê pelo tamanho do arquivo para preservar zeros internos e só aceita o conteúdo após validar o UTF-8.
+Str s_cria_de_arquivo(char *nome)
+{
+    Str s = s_cria(NULL);
+    FILE *arquivo = fopen(nome, "rb");
+    if (!arquivo) return s;
+    if (fseek(arquivo, 0, SEEK_END) == 0) {
+        long n = ftell(arquivo);
+        if (n > 0 && n <= INT_MAX && fseek(arquivo, 0, SEEK_SET) == 0) {
+            reserva(s, (int)n);
+            if (fread(s->dados, 1, n, arquivo) == (size_t)n) {
+                int caracteres = u8_conta_unichar_nos_bytes((int)n, s->dados);
+                if (caracteres >= 0) {
+                    s->bytes = (int)n;
+                    s->caracteres = caracteres;
+                }
+            }
+            if (!s->bytes) reserva(s, 0);
+        }
+    }
+    fclose(arquivo);
+    return s;
+}
+
+void s_imprime(Str_c s)
+{
+    if (s->bytes) fwrite(s->dados, 1, s->bytes, stdout);
+}
+
+void s_grava_arquivo(Str_c s, char *nome)
+{
+    FILE *arquivo = fopen(nome, "wb");
+    if (!arquivo) return;
+    if (s->bytes) fwrite(s->dados, 1, s->bytes, arquivo);
+    fclose(arquivo);
+}
