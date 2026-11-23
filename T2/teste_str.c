@@ -61,6 +61,12 @@ static void testa_busca(void)
 
 static void testa_arquivo(char *nome)
 {
+    FILE *temporario = fopen(nome, "wbx");
+    if (!temporario) {
+        fprintf(stderr, "Nao foi possivel criar o arquivo temporario de teste.\n");
+        exit(1);
+    }
+    fclose(temporario);
     Str s = s_cria("a");
     s_anexa_c(s, 0);
     s_anexa_c(s, 0x20ac);

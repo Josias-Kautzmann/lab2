@@ -213,7 +213,7 @@ void s_insere(Str s, int pos, Str_c sb)
 
 void s_insere_c(Str s, int pos, unichar c)
 {
-    byte dados[4];
+    byte dados[MIN_ALLOC];
     int n = u8_converte_pra_utf8(c, dados);
     if (n < 0) return;
     // A inserção copia os bytes enquanto o vetor local ainda existe.
