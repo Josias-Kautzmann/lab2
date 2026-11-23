@@ -331,3 +331,28 @@ void s_grava_arquivo(Str_c s, char *nome)
     if (s->bytes) fwrite(s->dados, 1, s->bytes, arquivo);
     fclose(arquivo);
 }
+
+Str s_cria_número(double num)
+{
+    char texto[64];
+    snprintf(texto, sizeof(texto), "%.17g", num);
+    return s_cria(texto);
+}
+
+double s_número(Str_c s)
+{
+    char *texto = s_strc(s);
+    double valor = strtod(texto, NULL);
+    free(texto);
+    return valor;
+}
+
+Str s_cria_unindo(Lista l, Str sep)
+{
+    Str resultado = s_cria(NULL);
+    for (int i = 0; i < l_tam(l); i++) {
+        if (i) s_anexa(resultado, sep);
+        s_anexa(resultado, l_dado_pos(l, i));
+    }
+    return resultado;
+}
