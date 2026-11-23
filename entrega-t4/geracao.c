@@ -1,4 +1,10 @@
 #include "geracao.h"
+#include <errno.h>
+#ifdef _WIN32
+#include <direct.h>
+#else
+#include <sys/stat.h>
+#endif
 #include "auxiliar.h"
 #include "config.h"
 #include "especie.h"
@@ -320,7 +326,15 @@ extern Geração geração_reproduz(Geração velha)
 extern void geração_grava(Geração geração)
 {
   char nome[30];
-  system("mkdir G 2> /dev/null"); // cria o diretório "G" se não existir
+#ifdef _WIN32
+  int criada = _mkdir("G");
+#else
+  int criada = mkdir("G", 0777);
+#endif
+  if (criada != 0 && errno != EEXIST) {
+    perror("G");
+    return;
+  }
   for (int i = 0; i < 1 /*N_INDIVÍDUOS*/; i++) {
     Indivíduo indivíduo = geração->indivíduos[i];
     sprintf(nome, "G/%04d-%03d", geração->id, i);

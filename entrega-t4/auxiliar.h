@@ -7,6 +7,7 @@
 
 // retorna um aleatório >= 0 e < 1
 float al01();
+void inicia_sorteio(long semente);
 
 // retorna um inteiro aleatório, que pode ser 0, mas não chega a ser limite
 int aleatório(int limite);

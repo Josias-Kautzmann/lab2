@@ -7,6 +7,7 @@
 //   gcc -o cobra main.c jogo.c fila.c terminal.c
 
 #include "main.h"
+#include "auxiliar.h"
 #include "jogo.h"
 #include "rede.h"
 #include "terminal.h"
@@ -70,7 +71,7 @@ enum que_fazer processa_argumentos(int argc, char *argv[], Rede *rede,
 {
   int ini = time(0);
   if (argc > 2) ini = atoi(argv[2]);
-  srand48(ini);
+  inicia_sorteio(ini);
   srand(ini);
 
   *jogo = jogo_cria();
