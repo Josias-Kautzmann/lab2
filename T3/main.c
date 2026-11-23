@@ -13,6 +13,7 @@ static Lista separa_linhas(Str texto)
         int fim = s_busca_c(texto, inicio, quebra);
         if (fim < 0) fim = tamanho;
         l_insere_fim(linhas, s_cria_substring(texto, inicio, fim - inicio));
+        if (fim == tamanho) break;
         inicio = fim + 1;
     }
     s_destroi(quebra);
