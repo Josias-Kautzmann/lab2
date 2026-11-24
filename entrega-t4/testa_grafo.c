@@ -55,30 +55,31 @@ Ordem topológica:
 #include "grafo.h"
 #include "fila.h"
 #include <stdio.h>
+#include <assert.h>
 #include <string.h>
 
 Grafo cria_grafo()
 {
   Grafo g = g_cria(7, 15);
-  char s[20];
+  char s[20] = {0};
   strcpy(s, "sapato");
   g_insere_nó(g, s);
   strcpy(s, "meia");
   g_insere_nó(g, s);
   strcpy(s, "calça");
   g_insere_nó(g, s);
-  g_insere_nó(g, "cinto");
-  g_insere_nó(g, "casaco");
-  g_insere_nó(g, "cueca");
-  g_insere_nó(g, "camisa");
+  g_insere_nó(g, (char[7]){"cinto"});
+  g_insere_nó(g, (char[7]){"casaco"});
+  g_insere_nó(g, (char[7]){"cueca"});
+  g_insere_nó(g, (char[7]){"camisa"});
   strcpy(s, "meia->sapato");
   g_altera_valor_da_aresta(g, 1, 0, s);
   strcpy(s, "calça->sapato");
   g_altera_valor_da_aresta(g, 2, 0, s);
-  g_altera_valor_da_aresta(g, 5, 2, "cueca->calça");
-  g_altera_valor_da_aresta(g, 2, 3, "calça->cinto");
-  g_altera_valor_da_aresta(g, 6, 4, "camisa->casaco");
-  g_altera_valor_da_aresta(g, 6, 3, "camisa->cinto");
+  g_altera_valor_da_aresta(g, 5, 2, (char[15]){"cueca->calça"});
+  g_altera_valor_da_aresta(g, 2, 3, (char[15]){"calça->cinto"});
+  g_altera_valor_da_aresta(g, 6, 4, (char[15]){"camisa->casaco"});
+  g_altera_valor_da_aresta(g, 6, 3, (char[15]){"camisa->cinto"});
   return g;
 }
 
@@ -133,8 +134,67 @@ void imprime_fila(Fila f, Grafo g)
   }
 }
 
+static void testa_fila(void)
+{
+  Fila f = f_cria(sizeof(int));
+  int n;
+  for (int i = 0; i < 8; i++) f_insere(f, &i);
+  for (int i = 0; i < 4; i++) {
+    f_remove(f, &n);
+    assert(n == i);
+  }
+  for (int i = 8; i < 20; i++) f_insere(f, &i);
+  f_inicia_percurso(f, -2);
+  for (int i = 18; i >= 4; i--) {
+    assert(f_próximo(f, &n) && n == i);
+  }
+  assert(!f_próximo(f, NULL));
+  f_inicia_percurso(f, 1);
+  assert(f_próximo(f, NULL));
+  assert(f_próximo(f, &n) && n == 6);
+  while (!f_tá_vazia(f)) f_remove(f, NULL);
+  f_destrói(f);
+}
+
+static void testa_ciclos_e_remocao(void)
+{
+  Grafo g = g_cria(sizeof(int), sizeof(int));
+  for (int i = 0; i < 4; i++) g_insere_nó(g, &i);
+  int peso = 8;
+  g_altera_valor_da_aresta(g, 3, 1, &peso);
+  g_altera_valor_da_aresta(g, 1, 2, &peso);
+  g_altera_valor_da_aresta(g, 2, 3, &peso);
+  assert(g_tem_ciclo(g));
+  Fila ordem = g_ordem_topológica(g);
+  assert(f_tá_vazia(ordem));
+  f_destrói(ordem);
+  g_remove_nó(g, 2);
+  assert(g_num_nós(g) == 3 && !g_tem_ciclo(g));
+  assert(*(int *)g_valor_do_nó(g, 2) == 3);
+  assert(*(int *)g_valor_da_aresta(g, 2, 1) == 8);
+  int vizinho = -1;
+  g_arestas_que_chegam(g, 1);
+  assert(g_próxima_aresta(g, &vizinho) && vizinho == 2);
+  assert(!g_próxima_aresta(g, &vizinho));
+  g_altera_valor_da_aresta(g, 1, 1, &peso);
+  assert(g_tem_ciclo(g));
+  g_altera_valor_da_aresta(g, 1, 1, NULL);
+  ordem = g_ordem_topológica(g);
+  int pos[3], n;
+  for (int i = 0; i < 3; i++) {
+    assert(!f_tá_vazia(ordem));
+    f_remove(ordem, &n);
+    pos[n] = i;
+  }
+  assert(pos[2] < pos[1] && f_tá_vazia(ordem));
+  f_destrói(ordem);
+  g_destrói(g);
+}
+
 int main()
 {
+  testa_fila();
+  testa_ciclos_e_remocao();
   Grafo g = cria_grafo();
   imprime_grafo(g);
   Fila f = g_ordem_topológica(g);
